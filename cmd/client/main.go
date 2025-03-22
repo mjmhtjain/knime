@@ -1,9 +1,10 @@
 package main
 
-import (
-	"fmt"
-)
+import "github.com/mjmhtjain/knime/src/outbox"
 
 func main() {
-	fmt.Println("Hello, World!")
+	outboxClient := outbox.New()
+
+	msg := outbox.NewMessage("test", "test")
+	outboxClient.PostMessage(msg)
 }

@@ -2,10 +2,10 @@ package outbox
 
 type Message struct {
 	Subject string
-	Body    string
+	Body    interface{}
 }
 
-func NewMessage(subject string, body string) *Message {
+func NewMessage(subject string, body interface{}) *Message {
 	return &Message{
 		Subject: subject,
 		Body:    body,
