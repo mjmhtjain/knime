@@ -1,9 +1,13 @@
 package main
 
 import (
-	"fmt"
+	"github.com/mjmhtjain/knime/src/router"
 )
 
 func main() {
-	fmt.Println("Hello, World!")
+	// Initialize Gin router
+	router := router.NewRouter()
+
+	// Start the server
+	router.Run(":8080")
 }
