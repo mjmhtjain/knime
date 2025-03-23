@@ -3,13 +3,14 @@ package repository
 import (
 	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/client"
+	"github.com/mjmhtjain/knime/src/internal/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // IOutboxMessageRepository defines the interface for message storage operations
 type IOutboxMessageRepository interface {
-	Create(messageEntity *OutboxMessageEntity) error
+	Create(messageEntity *model.OutboxMessageEntity) error
 }
 
 // OutboxMessageRepository implements MessageRepository using GORM
@@ -24,11 +25,15 @@ func NewOutboxMessageRepository(outboxDBConfig *config.OutboxDBConfig) IOutboxMe
 		logrus.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	if err := model.Migrate(db); err != nil {
+		logrus.Fatalf("Failed to migrate database: %v", err)
+	}
+
 	return &OutboxMessageRepository{db: db}
 }
 
 // Create stores a new message in the database
-func (r *OutboxMessageRepository) Create(messageEntity *OutboxMessageEntity) error {
+func (r *OutboxMessageRepository) Create(messageEntity *model.OutboxMessageEntity) error {
 	result := r.db.Create(messageEntity)
 	if result.Error != nil {
 		logrus.

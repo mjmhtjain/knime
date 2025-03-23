@@ -12,6 +12,14 @@ build:
 run:
 	$(DOCKER_COMPOSE) up -d
 
+# Bring the application down
+down:
+	$(DOCKER_COMPOSE) down
+
+# Clean Docker artifacts
+clean:
+	$(DOCKER) system prune -f
+
 # Clean Docker artifacts
 clean:
 	$(DOCKER_COMPOSE) down
