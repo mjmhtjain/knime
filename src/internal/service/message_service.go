@@ -70,5 +70,11 @@ func (s *MessageService) SaveMessage(msg *obj.Message) error {
 		return err
 	}
 
+	logrus.WithFields(logrus.Fields{
+		"Service": "MessageService",
+		"Method":  "SaveMessage",
+		"Message": messageEntity.ID,
+	}).Info("Message saved successfully")
+
 	return nil
 }
