@@ -1,0 +1,10 @@
+.git
+.gitignore
+.vscode
+*.md
+Dockerfile
+docker-compose.yml
+Makefile
+.dockerignore
+.env
+knime-client 

@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  knime-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: knime-client
+    restart: unless-stopped
+    volumes:
+      - ./.env:/app/.env
+    networks:
+      - knime-network
+
+networks:
+  knime-network:
+    driver: bridge 
