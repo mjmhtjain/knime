@@ -1,16 +1,15 @@
 package repository
 
 import (
-	"encoding/json"
-
-	"github.com/mjmhtjain/knime/src/internal/obj"
+	"github.com/mjmhtjain/knime/src/config"
+	"github.com/mjmhtjain/knime/src/internal/client"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // IOutboxMessageRepository defines the interface for message storage operations
 type IOutboxMessageRepository interface {
-	Create(message *obj.Message) error
-	FindByID(id uint) (*obj.Message, error)
+	Create(messageEntity *OutboxMessageEntity) error
 }
 
 // OutboxMessageRepository implements MessageRepository using GORM
@@ -19,46 +18,27 @@ type OutboxMessageRepository struct {
 }
 
 // NewOutboxMessageRepository creates a new message repository
-func NewOutboxMessageRepository(db *gorm.DB) IOutboxMessageRepository {
+func NewOutboxMessageRepository(outboxDBConfig *config.OutboxDBConfig) IOutboxMessageRepository {
+	db, err := client.NewDBClient(outboxDBConfig)
+	if err != nil {
+		logrus.Fatalf("Failed to connect to database: %v", err)
+	}
+
 	return &OutboxMessageRepository{db: db}
 }
 
 // Create stores a new message in the database
-func (r *OutboxMessageRepository) Create(message *obj.Message) error {
-	// Convert domain object to entity
-	entity := OutboxMessageEntity{
-		Subject: message.Subject,
-	}
-
-	// Assuming message.Body is interface{}
-	jsonBytes, err := json.Marshal(message.Body)
-	if err != nil {
-		return err
-	}
-	entity.Body = json.RawMessage(jsonBytes)
-
-	// Save to database
-	result := r.db.Create(&entity)
+func (r *OutboxMessageRepository) Create(messageEntity *OutboxMessageEntity) error {
+	result := r.db.Create(messageEntity)
 	if result.Error != nil {
+		logrus.
+			WithFields(logrus.Fields{
+				"Repository": "OutboxMessageRepository",
+				"Method":     "Create",
+				"Error":      result.Error,
+			}).Errorf("Failed to create message: %v", result.Error)
 		return result.Error
 	}
 
 	return nil
-}
-
-// FindByID retrieves a message by its ID
-func (r *OutboxMessageRepository) FindByID(id uint) (*obj.Message, error) {
-	var entity OutboxMessageEntity
-	result := r.db.First(&entity, id)
-	if result.Error != nil {
-		return nil, result.Error
-	}
-
-	// Convert entity to domain object
-	message := &obj.Message{
-		Subject: entity.Subject,
-		Body:    entity.Body,
-	}
-
-	return message, nil
 }

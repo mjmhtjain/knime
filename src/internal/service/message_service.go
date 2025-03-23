@@ -3,7 +3,9 @@ package service
 import (
 	"errors"
 
+	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/obj"
+	"github.com/mjmhtjain/knime/src/internal/repository"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,10 +14,12 @@ type IMessageService interface {
 }
 
 type MessageService struct {
+	repo repository.IOutboxMessageRepository
 }
 
-func NewMessageService() *MessageService {
-	return &MessageService{}
+func NewMessageService(outboxDBConfig *config.OutboxDBConfig) *MessageService {
+	repo := repository.NewOutboxMessageRepository(outboxDBConfig)
+	return &MessageService{repo: repo}
 }
 
 // SaveMessage saves the message to the database
@@ -30,6 +34,7 @@ func (s *MessageService) SaveMessage(msg *obj.Message) error {
 		err := errors.New("message body is nil")
 		return err
 	}
+
 	logrus.WithFields(logrus.Fields{
 		"message.subject": msg.Subject,
 	}).Info("Saving message")

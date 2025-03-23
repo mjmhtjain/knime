@@ -5,13 +5,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/outbox"
 )
 
 func main() {
-	outboxClient := outbox.New()
+	dbConfig := config.NewOutboxDBConfig("localhost", "5432", "postgres", "postgres", "postgres")
+	outboxClient := outbox.New(dbConfig)
 
-	numGoroutines := 3
+	numGoroutines := 1
 	waitGroup := sync.WaitGroup{}
 
 	for i := 0; i < numGoroutines; i++ {

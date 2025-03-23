@@ -3,8 +3,19 @@ package service
 import (
 	"testing"
 
+	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/obj"
 )
+
+func createTestDBConfig() *config.OutboxDBConfig {
+	return config.NewOutboxDBConfig(
+		"localhost",
+		"5432",
+		"test_user",
+		"test_password",
+		"test_db",
+	)
+}
 
 func TestMessageService_SaveMessage(t *testing.T) {
 	type args struct {
@@ -18,7 +29,7 @@ func TestMessageService_SaveMessage(t *testing.T) {
 	}{
 		{
 			name: "Save message with valid subject",
-			s:    NewMessageService(),
+			s:    NewMessageService(createTestDBConfig()),
 			args: args{
 				msg: obj.NewMessage("Test Subject", "Test Body"),
 			},
@@ -26,7 +37,7 @@ func TestMessageService_SaveMessage(t *testing.T) {
 		},
 		{
 			name: "Save message with empty subject",
-			s:    NewMessageService(),
+			s:    NewMessageService(createTestDBConfig()),
 			args: args{
 				msg: obj.NewMessage("", "Test Body"),
 			},
@@ -34,7 +45,7 @@ func TestMessageService_SaveMessage(t *testing.T) {
 		},
 		{
 			name: "Save message with nil body",
-			s:    NewMessageService(),
+			s:    NewMessageService(createTestDBConfig()),
 			args: args{
 				msg: obj.NewMessage("Test Subject", nil),
 			},
