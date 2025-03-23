@@ -1,6 +1,8 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // OutboxDBConfig holds database connection configuration
 type OutboxDBConfig struct {
