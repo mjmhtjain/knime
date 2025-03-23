@@ -62,15 +62,3 @@ func (r *OutboxMessageRepository) FindByID(id uint) (*obj.Message, error) {
 
 	return message, nil
 }
-
-// toString converts an interface to a string representation
-func toString(v interface{}) string {
-	if v == nil {
-		return ""
-	}
-	if s, ok := v.(string); ok {
-		return s
-	}
-	// You might want to add JSON serialization for more complex objects
-	return ""
-}
