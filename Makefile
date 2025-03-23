@@ -1,4 +1,4 @@
-.PHONY: build run clean re-run all logs
+.PHONY: build run clean re-run all logs test test-coverage
 
 # Docker commands
 DOCKER=docker
@@ -23,6 +23,14 @@ logs:
 
 # Re-run the application
 re-run: clean run
+
+# Run unit tests
+test:
+	$(DOCKER_COMPOSE) run --rm app test
+
+# Generate test coverage report
+test-coverage:
+	$(DOCKER_COMPOSE) run --rm app test --coverage
 
 # Default target
 all: build run 
