@@ -3,6 +3,7 @@ package outbox
 import (
 	"errors"
 
+	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/obj"
 	"github.com/mjmhtjain/knime/src/internal/service"
 	"github.com/sirupsen/logrus"
@@ -19,10 +20,10 @@ type Outbox struct {
 	messageService service.IMessageService
 }
 
-func New() *Outbox {
+func New(outboxDBConfig *config.OutboxDBConfig) *Outbox {
 	if outboxIns == nil {
 		outboxIns = &Outbox{
-			messageService: service.NewMessageService(),
+			messageService: service.NewMessageService(outboxDBConfig),
 		}
 	}
 
