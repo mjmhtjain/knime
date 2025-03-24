@@ -18,7 +18,12 @@ func main() {
 		getEnv("DB_USER", "postgres"),
 		getEnv("DB_PASSWORD", "postgres"),
 	)
-	outboxClient := outbox.New(dbConfig)
+
+	natsConfig := config.NewNatsConfig(
+		getEnv("NATS_URL", "nats://localhost:4222"),
+	)
+
+	outboxClient := outbox.New(dbConfig, natsConfig)
 
 	numGoroutines := 1
 	waitGroup := sync.WaitGroup{}
@@ -40,7 +45,7 @@ func getEnv(key, defaultValue string) string {
 }
 
 func postMessagesJob(outboxClient *outbox.Outbox, waitGroup *sync.WaitGroup) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 	defer waitGroup.Done()
 

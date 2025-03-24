@@ -20,16 +20,20 @@ type Outbox struct {
 	messageService service.IMessageService
 }
 
-func New(outboxDBConfig *config.OutboxDBConfig) *Outbox {
+func New(
+	outboxDBConfig *config.OutboxDBConfig,
+	natsConfig *config.NatsConfig,
+) *Outbox {
 	if outboxIns == nil {
 		outboxIns = &Outbox{
 			messageService: service.NewMessageService(outboxDBConfig),
 		}
+
+		// start the outbox service in a new goroutine
+		outboxService := service.NewOutboxService(outboxDBConfig)
+		go outboxService.ConsumeOutboxMessages()
 	}
 
-	// TODO: initialize NATS for sending the messages
-	// TODO: initialize DB for persisting the messages
-	// TODO: initialize the internal
 	return outboxIns
 }
 
