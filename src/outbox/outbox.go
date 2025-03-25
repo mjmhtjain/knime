@@ -1,7 +1,9 @@
 package outbox
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/obj"
@@ -17,7 +19,10 @@ func init() {
 }
 
 type Outbox struct {
+	outboxDBConfig *config.OutboxDBConfig
+	natsConfig     *config.NatsConfig
 	messageService service.IMessageService
+	outboxService  service.IOutboxService
 }
 
 func New(
@@ -26,12 +31,11 @@ func New(
 ) *Outbox {
 	if outboxIns == nil {
 		outboxIns = &Outbox{
+			outboxDBConfig: outboxDBConfig,
+			natsConfig:     natsConfig,
 			messageService: service.NewMessageService(outboxDBConfig),
+			outboxService:  service.NewOutboxService(outboxDBConfig),
 		}
-
-		// start the outbox service in a new goroutine
-		outboxService := service.NewOutboxService(outboxDBConfig)
-		go outboxService.ConsumeOutboxMessages()
 	}
 
 	return outboxIns
@@ -45,4 +49,18 @@ func (o *Outbox) PostMessage(message *Message) error {
 
 	msg := obj.NewMessage(message.Subject, message.Body)
 	return o.messageService.SaveMessage(msg)
+}
+
+func (o *Outbox) LaunchOutboxService(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			go o.outboxService.ConsumeOutboxMessages()
+		}
+	}
 }
