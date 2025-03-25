@@ -14,8 +14,8 @@ type OutboxService struct {
 	outboxRepository repository.IOutboxMessageRepository
 }
 
-func NewOutboxService(outboxDBConfig *config.OutboxDBConfig) *OutboxService {
-	repo := repository.NewOutboxMessageRepository(outboxDBConfig)
+func NewOutboxService(outboxDBConfig *config.OutboxDBConfig, natsConfig *config.NatsConfig) *OutboxService {
+	repo := repository.NewOutboxMessageRepository(outboxDBConfig, natsConfig)
 
 	return &OutboxService{
 		outboxRepository: repo,

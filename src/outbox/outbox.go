@@ -33,8 +33,8 @@ func New(
 		outboxIns = &Outbox{
 			outboxDBConfig: outboxDBConfig,
 			natsConfig:     natsConfig,
-			messageService: service.NewMessageService(outboxDBConfig),
-			outboxService:  service.NewOutboxService(outboxDBConfig),
+			messageService: service.NewMessageService(outboxDBConfig, natsConfig),
+			outboxService:  service.NewOutboxService(outboxDBConfig, natsConfig),
 		}
 	}
 

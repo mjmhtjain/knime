@@ -1,15 +1,17 @@
 package repository
 
 import (
+	"encoding/json"
+
 	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/client"
-	"github.com/mjmhtjain/knime/src/internal/obj"
+	"github.com/mjmhtjain/knime/src/internal/model"
 	"github.com/nats-io/nats.go"
 	"github.com/sirupsen/logrus"
 )
 
 type INatsRepository interface {
-	PublishMessage(message *obj.Message) error
+	PublishMessage(message *model.OutboxMessageEntity) error
 }
 
 type NatsRepository struct {
@@ -27,6 +29,28 @@ func NewNatsRepository(natsConfig *config.NatsConfig) INatsRepository {
 	}
 }
 
-func (r *NatsRepository) PublishMessage(message *obj.Message) error {
+func (r *NatsRepository) PublishMessage(message *model.OutboxMessageEntity) error {
+	jsonBody, err := json.Marshal(message.Body)
+	if err != nil {
+		logrus.
+			WithFields(logrus.Fields{
+				"Repository": "NatsRepository",
+				"Method":     "PublishMessage",
+				"Error":      err,
+			}).Errorf("Failed to marshal message body: %v", err)
+		return err
+	}
+
+	err = r.natsClient.Publish(message.Subject, jsonBody)
+	if err != nil {
+		logrus.
+			WithFields(logrus.Fields{
+				"Repository": "NatsRepository",
+				"Method":     "PublishMessage",
+				"Error":      err,
+			}).Errorf("Failed to publish message to nats: %v", err)
+		return err
+	}
+
 	return nil
 }

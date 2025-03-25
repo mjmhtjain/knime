@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"time"
 
 	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/client"
@@ -19,11 +20,12 @@ type IOutboxMessageRepository interface {
 
 // OutboxMessageRepository implements MessageRepository using GORM
 type OutboxMessageRepository struct {
-	db *gorm.DB
+	natsRepository INatsRepository
+	db             *gorm.DB
 }
 
 // NewOutboxMessageRepository creates a new message repository
-func NewOutboxMessageRepository(outboxDBConfig *config.OutboxDBConfig) IOutboxMessageRepository {
+func NewOutboxMessageRepository(outboxDBConfig *config.OutboxDBConfig, natsConfig *config.NatsConfig) IOutboxMessageRepository {
 	db, err := client.NewDBClient(outboxDBConfig)
 	if err != nil {
 		logrus.Fatalf("Failed to connect to database: %v", err)
@@ -33,7 +35,10 @@ func NewOutboxMessageRepository(outboxDBConfig *config.OutboxDBConfig) IOutboxMe
 		logrus.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	return &OutboxMessageRepository{db: db}
+	return &OutboxMessageRepository{
+		natsRepository: NewNatsRepository(natsConfig),
+		db:             db,
+	}
 }
 
 // Create stores a new message in the database
@@ -84,8 +89,11 @@ func (r *OutboxMessageRepository) ReadLatestPendingMessages() ([]model.OutboxMes
 		return nil, err
 	}
 
+	// update the updated_at field to the current time
 	// update all the messages status to sent
-	tx.Model(&messages).Update("status", util.MessageStatusSent)
+	tx.Model(&messages).
+		Update("updated_at", time.Now()).
+		Update("status", util.MessageStatusSent)
 	if tx.Error != nil {
 		logrus.
 			WithFields(logrus.Fields{
@@ -94,6 +102,15 @@ func (r *OutboxMessageRepository) ReadLatestPendingMessages() ([]model.OutboxMes
 				"Error":      tx.Error,
 			}).Errorf("Failed to update message status to sent: %v", tx.Error)
 		return nil, tx.Error
+	}
+
+	// publish the messages to nats
+	for _, message := range messages {
+		err := r.natsRepository.PublishMessage(&message)
+		if err != nil {
+			tx.Rollback()
+			return nil, err
+		}
 	}
 
 	tx.Commit()
