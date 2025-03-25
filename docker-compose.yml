@@ -8,6 +8,7 @@ services:
     container_name: knime-client
     depends_on:
       - postgres
+      - nats
     restart: unless-stopped
     environment:
       DB_HOST: postgres
@@ -15,6 +16,7 @@ services:
       DB_NAME: postgres
       DB_USER: postgres
       DB_PASSWORD: postgres
+      NATS_URL: nats://nats:4222
     volumes:
       - ./.env:/app/.env
     networks:
@@ -32,6 +34,17 @@ services:
       - postgres-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - knime-network
+
+  nats:
+    image: nats:latest
+    container_name: knime-nats
+    restart: unless-stopped
+    ports:
+      - "4222:4222"  # Client connections
+      - "8222:8222"  # HTTP management port
+      - "6222:6222"  # Clustering port
     networks:
       - knime-network
 

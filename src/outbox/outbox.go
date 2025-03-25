@@ -1,7 +1,9 @@
 package outbox
 
 import (
+	"context"
 	"errors"
+	"time"
 
 	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/internal/obj"
@@ -17,19 +19,25 @@ func init() {
 }
 
 type Outbox struct {
+	outboxDBConfig *config.OutboxDBConfig
+	natsConfig     *config.NatsConfig
 	messageService service.IMessageService
+	outboxService  service.IOutboxService
 }
 
-func New(outboxDBConfig *config.OutboxDBConfig) *Outbox {
+func New(
+	outboxDBConfig *config.OutboxDBConfig,
+	natsConfig *config.NatsConfig,
+) *Outbox {
 	if outboxIns == nil {
 		outboxIns = &Outbox{
-			messageService: service.NewMessageService(outboxDBConfig),
+			outboxDBConfig: outboxDBConfig,
+			natsConfig:     natsConfig,
+			messageService: service.NewMessageService(outboxDBConfig, natsConfig),
+			outboxService:  service.NewOutboxService(outboxDBConfig, natsConfig),
 		}
 	}
 
-	// TODO: initialize NATS for sending the messages
-	// TODO: initialize DB for persisting the messages
-	// TODO: initialize the internal
 	return outboxIns
 }
 
@@ -41,4 +49,18 @@ func (o *Outbox) PostMessage(message *Message) error {
 
 	msg := obj.NewMessage(message.Subject, message.Body)
 	return o.messageService.SaveMessage(msg)
+}
+
+func (o *Outbox) LaunchOutboxService(ctx context.Context) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			go o.outboxService.ConsumeOutboxMessages()
+		}
+	}
 }
