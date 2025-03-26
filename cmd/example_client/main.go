@@ -11,6 +11,7 @@ import (
 
 	"github.com/mjmhtjain/knime/src/config"
 	"github.com/mjmhtjain/knime/src/outbox"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -41,16 +42,19 @@ func main() {
 		getEnv("NATS_URL", "nats://localhost:4222"),
 	)
 
+	// Launch the outbox service
 	outboxClient := outbox.New(dbConfig, natsConfig)
 	go outboxClient.LaunchOutboxService(ctx)
 
-	numGoroutines := 1
+	// Launch the message posting service
 	waitGroup := sync.WaitGroup{}
+	waitGroup.Add(1)
 
-	for i := 0; i < numGoroutines; i++ {
-		waitGroup.Add(1)
-		go postMessagesJob(ctx, outboxClient, &waitGroup)
-	}
+	messageService := NewMessageService(dbConfig, natsConfig)
+	go func() {
+		defer waitGroup.Done()
+		messageService.LaunchPostMessageJob(ctx)
+	}()
 
 	waitGroup.Wait()
 }
@@ -63,21 +67,37 @@ func getEnv(key, defaultValue string) string {
 	return value
 }
 
-func postMessagesJob(ctx context.Context, outboxClient *outbox.Outbox, waitGroup *sync.WaitGroup) {
-	ticker := time.NewTicker(3 * time.Second)
-	defer ticker.Stop()
-	defer waitGroup.Done()
+type IMessageService interface {
+	LaunchPostMessageJob(ctx context.Context)
+}
 
+type MessageService struct {
+	outboxClient *outbox.Outbox
+}
+
+func NewMessageService(dbConfig *config.OutboxDBConfig, natsConfig *config.NatsConfig) IMessageService {
+	outboxClient := outbox.New(dbConfig, natsConfig)
+
+	return &MessageService{
+		outboxClient: outboxClient,
+	}
+}
+
+func (s *MessageService) LaunchPostMessageJob(ctx context.Context) {
 	count := 0
+
 	for {
 		select {
 		case <-ctx.Done():
 			fmt.Println("Context cancelled, stopping message posting...")
 			return
-		case <-ticker.C:
+		case <-time.Tick(1 * time.Second):
 			count++
 			msg := outbox.NewMessage(fmt.Sprintf("subject-%d", count), fmt.Sprintf("body-%d", count))
-			outboxClient.PostMessage(msg)
+			err := s.outboxClient.PostMessage(msg)
+			if err != nil {
+				logrus.Error("Error posting message:", "error", err)
+			}
 		}
 	}
 }
