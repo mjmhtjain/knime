@@ -30,12 +30,12 @@ func (_m *IOutboxMessageRepository) Create(messageEntity *model.OutboxMessageEnt
 	return r0
 }
 
-// ReadLatestPendingMessages provides a mock function with no fields
-func (_m *IOutboxMessageRepository) ReadLatestPendingMessages() ([]model.OutboxMessageEntity, error) {
+// PushPendingMessages provides a mock function with no fields
+func (_m *IOutboxMessageRepository) PushPendingMessages() ([]model.OutboxMessageEntity, error) {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
-		panic("no return value specified for ReadLatestPendingMessages")
+		panic("no return value specified for PushPendingMessages")
 	}
 
 	var r0 []model.OutboxMessageEntity

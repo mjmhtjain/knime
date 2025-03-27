@@ -42,11 +42,11 @@ func main() {
 		getEnv("NATS_URL", "nats://localhost:4222"),
 	)
 
-	// Launch the outbox service
+	// Launch the outbox service to consume messages from the outbox
 	outboxClient := outbox.New(dbConfig, natsConfig)
 	go outboxClient.LaunchOutboxService(ctx)
 
-	// Launch the message posting service
+	// Launch the message posting service to post messages to the outbox
 	waitGroup := sync.WaitGroup{}
 	waitGroup.Add(1)
 

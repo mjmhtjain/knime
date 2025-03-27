@@ -34,11 +34,11 @@ re-run: clean run
 
 # Run unit tests
 test:
-	$(DOCKER_COMPOSE) run --rm app test
+	go test ./...
 
 # Generate test coverage report
 test-coverage:
-	$(DOCKER_COMPOSE) run --rm app test --coverage
+	go test -coverprofile=coverage.out ./... && go tool cover -html=coverage.out
 
 # Default target
 all: build run 
