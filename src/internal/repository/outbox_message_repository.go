@@ -15,7 +15,7 @@ import (
 // IOutboxMessageRepository defines the interface for message storage operations
 type IOutboxMessageRepository interface {
 	Create(messageEntity *model.OutboxMessageEntity) error
-	ReadLatestPendingMessages() ([]model.OutboxMessageEntity, error)
+	PushPendingMessages() ([]model.OutboxMessageEntity, error)
 }
 
 // OutboxMessageRepository implements MessageRepository using GORM
@@ -58,7 +58,7 @@ func (r *OutboxMessageRepository) Create(messageEntity *model.OutboxMessageEntit
 }
 
 // ReadLatestMessage reads the latest message from the database with status pending
-func (r *OutboxMessageRepository) ReadLatestPendingMessages() ([]model.OutboxMessageEntity, error) {
+func (r *OutboxMessageRepository) PushPendingMessages() ([]model.OutboxMessageEntity, error) {
 	var messages []model.OutboxMessageEntity
 
 	tx := r.db.Begin()

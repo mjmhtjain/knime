@@ -24,7 +24,7 @@ func NewOutboxService(outboxDBConfig *config.OutboxDBConfig, natsConfig *config.
 
 func (s *OutboxService) ConsumeOutboxMessages() error {
 	// read the latest message from the outbox table
-	messages, err := s.outboxRepository.ReadLatestPendingMessages()
+	messages, err := s.outboxRepository.PushPendingMessages()
 	if err != nil {
 		return err
 	}

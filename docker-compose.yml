@@ -17,6 +17,8 @@ services:
       DB_USER: postgres
       DB_PASSWORD: postgres
       NATS_URL: nats://nats:4222
+      POST_MESSAGE_INTERVAL: 1
+      OUTBOX_PUSH_MESSAGE_INTERVAL: 5
     volumes:
       - ./.env:/app/.env
     networks:
