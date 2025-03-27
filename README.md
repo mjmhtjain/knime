@@ -31,3 +31,28 @@ This application uses Docker and can be managed using the provided Makefile comm
    make down
    ```
 
+### Development Workflow
+
+1. Make changes to the codebase
+2. Rebuild and restart the application:
+   ```
+   make re-run
+   ```
+
+3. Run tests to verify your changes:
+   ```
+   make test
+   ```
+
+4. Check test coverage:
+   ```
+   make test-coverage
+   ```
+
+5. Create mocks using mockery
+   ```
+   mockery --name=IOutboxMessageRepository \
+   --dir=./src/internal/repository \
+   --output=./src/internal/repository/mocks \
+   --filename=outbox_message_repository_mock.go
+   ```
