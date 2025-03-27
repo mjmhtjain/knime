@@ -10,7 +10,7 @@ RUN go mod download
 COPY . .
 
 # Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/knime-client ./cmd/client/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/knime-client ./cmd/example_client/
 
 # Final stage
 FROM alpine:latest

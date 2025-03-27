@@ -60,7 +60,10 @@ func (o *Outbox) LaunchOutboxService(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			go o.outboxService.ConsumeOutboxMessages()
+			err := o.outboxService.ConsumeOutboxMessages()
+			if err != nil {
+				logrus.Error("Error consuming outbox messages", err)
+			}
 		}
 	}
 }
