@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -30,6 +31,7 @@ func main() {
 		cancel()
 	}()
 
+	// Initialize the configs
 	dbConfig := config.NewOutboxDBConfig(
 		getEnv("DB_HOST", "localhost"),
 		getEnv("DB_PORT", "5432"),
@@ -59,27 +61,25 @@ func main() {
 	waitGroup.Wait()
 }
 
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
 type IMessageService interface {
 	LaunchPostMessageJob(ctx context.Context)
 }
 
 type MessageService struct {
-	outboxClient *outbox.Outbox
+	outboxClient        *outbox.Outbox
+	postMessageInterval int
 }
 
 func NewMessageService(dbConfig *config.OutboxDBConfig, natsConfig *config.NatsConfig) IMessageService {
-	outboxClient := outbox.New(dbConfig, natsConfig)
+	postMessageInterval := getEnv("POST_MESSAGE_INTERVAL", "1")
+	interval, err := strconv.Atoi(postMessageInterval)
+	if err != nil {
+		logrus.Fatalf("Error converting POST_MESSAGE_INTERVAL to int: %v", err)
+	}
 
 	return &MessageService{
-		outboxClient: outboxClient,
+		postMessageInterval: interval,
+		outboxClient:        outbox.New(dbConfig, natsConfig),
 	}
 }
 
@@ -91,7 +91,7 @@ func (s *MessageService) LaunchPostMessageJob(ctx context.Context) {
 		case <-ctx.Done():
 			fmt.Println("Context cancelled, stopping message posting...")
 			return
-		case <-time.Tick(1 * time.Second):
+		case <-time.Tick(time.Duration(s.postMessageInterval) * time.Second): // Post a message every interval seconds
 			count++
 			msg := outbox.NewMessage(fmt.Sprintf("subject-%d", count), fmt.Sprintf("body-%d", count))
 			err := s.outboxClient.PostMessage(msg)
@@ -100,4 +100,12 @@ func (s *MessageService) LaunchPostMessageJob(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func getEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	return value
 }

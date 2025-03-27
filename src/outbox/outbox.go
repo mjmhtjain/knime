@@ -3,6 +3,8 @@ package outbox
 import (
 	"context"
 	"errors"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/mjmhtjain/knime/src/config"
@@ -19,10 +21,11 @@ func init() {
 }
 
 type Outbox struct {
-	outboxDBConfig *config.OutboxDBConfig
-	natsConfig     *config.NatsConfig
-	messageService service.IMessageService
-	outboxService  service.IOutboxService
+	pushMessageInterval int
+	outboxDBConfig      *config.OutboxDBConfig
+	natsConfig          *config.NatsConfig
+	messageService      service.IMessageService
+	outboxService       service.IOutboxService
 }
 
 func New(
@@ -30,11 +33,22 @@ func New(
 	natsConfig *config.NatsConfig,
 ) *Outbox {
 	if outboxIns == nil {
+		pushMessageInterval := os.Getenv("OUTBOX_PUSH_MESSAGE_INTERVAL")
+		if pushMessageInterval == "" {
+			pushMessageInterval = "5" // default to 5 seconds
+		}
+
+		interval, err := strconv.Atoi(pushMessageInterval)
+		if err != nil {
+			logrus.Fatalf("Error converting OUTBOX_PUSH_MESSAGE_INTERVAL to int: %v", err)
+		}
+
 		outboxIns = &Outbox{
-			outboxDBConfig: outboxDBConfig,
-			natsConfig:     natsConfig,
-			messageService: service.NewMessageService(outboxDBConfig, natsConfig),
-			outboxService:  service.NewOutboxService(outboxDBConfig, natsConfig),
+			pushMessageInterval: interval,
+			outboxDBConfig:      outboxDBConfig,
+			natsConfig:          natsConfig,
+			messageService:      service.NewMessageService(outboxDBConfig, natsConfig),
+			outboxService:       service.NewOutboxService(outboxDBConfig, natsConfig),
 		}
 	}
 
@@ -52,7 +66,8 @@ func (o *Outbox) PostMessage(message *Message) error {
 }
 
 func (o *Outbox) LaunchOutboxService(ctx context.Context) {
-	ticker := time.NewTicker(5 * time.Second)
+
+	ticker := time.NewTicker(time.Duration(o.pushMessageInterval) * time.Second) // Push messages every pushMessageInterval seconds
 	defer ticker.Stop()
 
 	for {
